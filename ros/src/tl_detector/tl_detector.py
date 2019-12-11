@@ -54,7 +54,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        self.has_image = False
+        #self.has_image = False
 
         rospy.spin()
 
