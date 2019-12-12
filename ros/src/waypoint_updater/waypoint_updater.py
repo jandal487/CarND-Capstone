@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 import rospy
@@ -56,7 +57,7 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(PUB_FREQUENCY)
         while not rospy.is_shutdown():
-            if self.pose and self.base_lane:
+            if self.pose and self.base_lane and self.waypoint_tree:
                 self.publish_waypoints()
             rate.sleep()
 
