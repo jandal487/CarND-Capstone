@@ -24,7 +24,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-PUB_FREQUENCY = 50  # Gives control over the publishing frequency
+PUB_FREQUENCY = 20  # Gives control over the publishing frequency
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = 0.5     # Maximum deceleration
 
@@ -72,8 +72,7 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-		if self.stopline_wp_idx != msg.data:
-			self.stopline_wp_idx = msg.data
+        self.stopline_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -135,6 +134,7 @@ class WaypointUpdater(object):
             vel = math.sqrt(2 * MAX_DECEL * dist)
             if vel < 1.:
                 vel = 0
+            print(p)
 
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
             temp.append(p)
