@@ -10,9 +10,11 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import time
 from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
+DEBUG_CODE = False
 
 class TLDetector(object):
     def __init__(self):
@@ -55,8 +57,39 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
         self.has_image = False
+        self.process_count = 0
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        # Set loop rate at 10Hz
+        rate = rospy.Rate(10)
+        # Run until node is shutted down
+        while not rospy.is_shutdown():
+            if self.pose and self.waypoints and self.camera_image:
+                # Process current image from camera
+                light_wp, state = self.process_traffic_lights()
+
+                '''
+                Publish upcoming red lights at camera frequency.
+                Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+                of times till we start using it. Otherwise the previous stable state is
+                used.
+                '''
+                rospy.logwarn("self state :{} state:{} state_count:{}".format(self.state, state , self.state_count))
+                if self.state != state:
+                    self.state_count = 0
+                    self.state = state
+                elif self.state_count >= STATE_COUNT_THRESHOLD:
+                    self.last_state = self.state
+                    light_wp = light_wp if state == TrafficLight.RED else -1
+                    self.last_wp = light_wp
+                    self.upcoming_red_light_pub.publish(Int32(light_wp))
+                else:
+                    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                self.state_count += 1
+
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -81,27 +114,8 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
-
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
-
-    def get_closest_waypoint(self, pose):
+        
+    def get_closest_waypoint(self, x , y):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
@@ -124,18 +138,21 @@ class TLDetector(object):
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
-        """
-        # For testing, just return the light state
-        #return light.state
-        
-        if(not self.has_image):
-            self.prev_light_loc = None
-            return False
+        """        
+        # For test mode, just return the light state
+        if DEBUG_CODE:
+            classification = light.state
+        else:
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+            # Get classification
+            classification = self.light_classifier.get_classification(cv_image)
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+            # Save image (throttled)
+            if SAVE_IMAGES and (self.process_count % 5 == 0):
+                save_file = "../../../imgs/{}-{:.0f}.jpeg".format(self.to_string(classification), (time.time() * 100))
+                cv2.imwrite(save_file, cv_image)
 
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        return classification
 
     def process_traffic_lights(self):
         closest_light = None
@@ -162,10 +179,24 @@ class TLDetector(object):
                     line_wp_idx = temp_wp_idx
 
         if closest_light:
+            self.process_count += 1
             state = self.get_light_state(closest_light)
+            if (self.process_count % 5) == 0:
+                rospy.logwarn("DETECT: line_wp_idx={}, state={}".format(line_wp_idx, self.to_string(state)))
             return line_wp_idx, state
-        
+        self.waypoints = None
+
         return -1, TrafficLight.UNKNOWN
+    
+    def to_string(self, state):
+        out = "unknown"
+        if state == TrafficLight.GREEN:
+            out = "green"
+        elif state == TrafficLight.YELLOW:
+            out = "yellow"
+        elif state == TrafficLight.RED:
+            out = "red"
+        return out
 
 if __name__ == '__main__':
     try:
