@@ -114,11 +114,12 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        if not self.waypoint_tree:
+            #Base Waypoints are not received yet.
+            return
         self.has_image = True
         self.camera_image = msg
-        #rospy.logwarn("Updating from Camera Image")
-        
-    def get_closest_waypoint(self, x , y):
+
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
@@ -149,13 +150,6 @@ class TLDetector(object):
             cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
             # Get classification
             classification = self.light_classifier.get_classification(cv_image)
-
-            # Save image (throttled)
-            if SAVE_IMAGES and (self.process_count % 5 == 0):
-                save_file = "../../../imgs/{}-{:.0f}.jpeg".format(self.to_string(classification), (time.time() * 100))
-                cv2.imwrite(save_file, cv_image)
-
-        return classification
 
     def process_traffic_lights(self):
         closest_light = None
