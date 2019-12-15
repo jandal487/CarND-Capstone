@@ -13,8 +13,9 @@ import yaml
 import time
 from scipy.spatial import KDTree
 
-STATE_COUNT_THRESHOLD = 3
-DEBUG_CODE = False
+STATE_COUNT_THRESHOLD = 2
+DEBUG_CODE = True
+SAVE_IMAGES= False
 
 class TLDetector(object):
     def __init__(self):
@@ -97,9 +98,10 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
         # Setup the Kd Tree which has log(n) complexity
-        if not self.waypoints_2d:
-            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
-            self.waypoint_tree = KDTree(self.waypoints_2d)
+        #if not self.waypoints_2d:
+        self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+        self.waypoint_tree = KDTree(self.waypoints_2d)
+        rospy.logwarn("Updating TL detector Waypoints")
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -114,6 +116,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
+        #rospy.logwarn("Updating from Camera Image")
         
     def get_closest_waypoint(self, x , y):
         """Identifies the closest path waypoint to the given position
@@ -161,7 +164,7 @@ class TLDetector(object):
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
 
-        if(self.pose):
+        if(self.pose): #and self.waypoint_tree):
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
             
             # TODO find the closest visible traffic light (if one exists)

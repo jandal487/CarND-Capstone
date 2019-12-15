@@ -60,7 +60,7 @@ class TLClassifier(object):
         #image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         #(im_width, im_height, _) = image_rgb.shape
         image_np = np.expand_dims(image, axis=0)
-        rospy.logwarn("Variable Classes={}".format(self.detection_classes))
+        #rospy.logwarn("Variable Classes={}".format(self.detection_classes))
 
         # Actual detection.
         if None not in [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections, self.sess]:

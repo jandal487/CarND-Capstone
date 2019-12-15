@@ -30,7 +30,7 @@ or
 Update launch file with output="screen"/ to view logs
 '''
 
-PUB_FREQUENCY = 50  # Gives control over the publishing frequency
+PUB_FREQUENCY = 10 # Gives control over the publishing frequency
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = 0.5     # Maximum deceleration
 
@@ -63,7 +63,7 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(PUB_FREQUENCY)
         while not rospy.is_shutdown():
-            if self.pose and self.base_lane and self.waypoint_tree:
+            if self.pose and self.base_lane: #and self.waypoint_tree:
                 self.publish_waypoints()
             rate.sleep()
 
@@ -126,11 +126,11 @@ class WaypointUpdater(object):
         closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
-        #rospy.logwarn("closest index :{}  and stopline index:{}".format(closest_idx, self.stopline_wp_idx))
+        rospy.logwarn("closest index :{}  and stopline index:{}".format(closest_idx, self.stopline_wp_idx))
         # If no traffic light was detected, publish the base_waypoints as it is
         if (self.stopline_wp_idx== -1) or (self.stopline_wp_idx >= farthest_idx):
             lane.waypoints = base_waypoints
-            #rospy.logwarn("No Change")
+            rospy.logwarn("No Change")
         else:
             rospy.logwarn("Reduce speed")
             lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
@@ -168,7 +168,7 @@ class WaypointUpdater(object):
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt(pow((a.x-b.x),2) + pow((a.y-b.y),2)  + pow((a.z-b.z),2))
+        dl = lambda a, b: math.sqrt(((a.x-b.x)**2) + ((a.y-b.y)**2)  + ((a.z-b.z)**2))
         for i in range(wp1, wp2+1):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
