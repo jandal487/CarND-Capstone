@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node">
-        <param name="model" value="frozen_inference_graph_sim_v1.4.pb" />    
+        <param name="model" value="faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb" />
     </node>
     <node pkg="tl_detector" type="light_publisher.py" name="light_publisher" output="screen" cwd="node"/>
 </launch>
