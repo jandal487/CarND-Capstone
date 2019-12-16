@@ -13,9 +13,11 @@ import yaml
 import time
 from scipy.spatial import KDTree
 
+
 STATE_COUNT_THRESHOLD = 3
 DEBUG_CODE = True
 SAVE_IMAGES = False
+
 
 
 class TLDetector(object):
@@ -24,10 +26,8 @@ class TLDetector(object):
 
         self.pose = None
         self.waypoints = None
-
         self.waypoints_2d = None
         self.waypoint_tree = None
-
         self.camera_image = None
         self.lights = []
         self.state = TrafficLight.UNKNOWN
@@ -50,7 +50,7 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        config_string = rospy.get_param("/traffic_light_config")  # Simulator_mode parameter (1== ON, 0==OFF)
+        config_string = rospy.get_param("/traffic_light_config") # Simulator_mode parameter (1== ON, 0==OFF)
         self.config = yaml.load(config_string)
 
         # Publish the index of the waypoint where we have to stop
@@ -59,9 +59,6 @@ class TLDetector(object):
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier(rospy.get_param('~model'))
         self.listener = tf.TransformListener()
-
-
-
         self.loop()
 
     def loop(self):
@@ -80,6 +77,7 @@ class TLDetector(object):
                 used.
                 '''
                 rospy.logwarn("self state :{} state:{} state_count:{}".format(self.state, state, self.state_count))
+
                 if self.state != state:
                     self.state_count = 0
                     self.state = state
@@ -103,6 +101,7 @@ class TLDetector(object):
         # if not self.waypoints_2d:
         self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in
                              waypoints.waypoints]
+
         self.waypoint_tree = KDTree(self.waypoints_2d)
         rospy.logwarn("Updating TL detector Waypoints")
 
@@ -196,10 +195,21 @@ class TLDetector(object):
             state = self.get_light_state(closest_light)
             #if (self.process_count % 5) == 0:
             #    rospy.logwarn("DETECT: line_wp_idx={}, state={}".format(line_wp_idx, self.to_string(state)))
+
             return line_wp_idx, state
         self.waypoints = None
 
         return -1, TrafficLight.UNKNOWN
+    
+    def to_string(self, state):
+        out = "unknown"
+        if state == TrafficLight.GREEN:
+            out = "green"
+        elif state == TrafficLight.YELLOW:
+            out = "yellow"
+        elif state == TrafficLight.RED:
+            out = "red"
+        return out
 
     def to_string(self, state):
         out = "unknown"

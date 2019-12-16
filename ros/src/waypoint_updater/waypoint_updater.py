@@ -65,6 +65,7 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_lane and self.waypoint_tree:
                 self.publish_waypoints()
+
             rate.sleep()
 
     def pose_cb(self, msg):
