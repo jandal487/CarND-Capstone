@@ -60,6 +60,7 @@ class TLDetector(object):
 
         self.listener = tf.TransformListener()
         self.loop()
+        #rospy.spin()
 
     def loop(self):
         # Set loop rate at 10Hz
@@ -76,7 +77,7 @@ class TLDetector(object):
                 of times till we start using it. Otherwise the previous stable state is
                 used.
                 '''
-                rospy.logwarn("self state :{} state:{} state_count:{}".format(self.state, state, self.state_count))
+                #rospy.logwarn("self state :{} state:{} state_count:{}".format(self.state, state, self.state_count))
 
                 if self.state != state:
                     self.state_count = 0
@@ -98,12 +99,12 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
         # Setup the Kd Tree which has log(n) complexity
-        # if not self.waypoints_2d:
-        self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in
+        if not self.waypoints_2d:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in
                              waypoints.waypoints]
 
-        self.waypoint_tree = KDTree(self.waypoints_2d)
-        rospy.logwarn("Updating TL detector Waypoints")
+            self.waypoint_tree = KDTree(self.waypoints_2d)
+        #rospy.logwarn("Updating TL detector Waypoints")
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -114,19 +115,17 @@ class TLDetector(object):
         Args:
             msg (Image): image from car-mounted camera
         """
-        if not self.waypoint_tree:
-            # Base Waypoints are not received yet.
-            return
         self.has_image = True
         self.camera_image = msg
+        '''
         light_wp, state = self.process_traffic_lights()
 
-        '''	
+       
         Publish upcoming red lights at camera frequency.	
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number	
         of times till we start using it. Otherwise the previous stable state is	
         used.	
-        '''
+       
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -138,7 +137,7 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-
+        '''
     def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -202,16 +201,6 @@ class TLDetector(object):
 
         return -1, TrafficLight.UNKNOWN
     
-    def to_string(self, state):
-        out = "unknown"
-        if state == TrafficLight.GREEN:
-            out = "green"
-        elif state == TrafficLight.YELLOW:
-            out = "yellow"
-        elif state == TrafficLight.RED:
-            out = "red"
-        return out
-
     def to_string(self, state):
         out = "unknown"
         if state == TrafficLight.GREEN:
