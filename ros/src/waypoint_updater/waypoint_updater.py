@@ -40,7 +40,7 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=2)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=8)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1) # the waypoints is static
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
@@ -124,17 +124,19 @@ class WaypointUpdater(object):
     def generate_lane(self):
         lane = Lane()
         # Get the closest and farthest index
+        lane.header = self.base_lane.header
+        
         closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
-        base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
+        lane.waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
         rospy.logwarn("closest index :{}  and stopline index:{}".format(closest_idx, self.stopline_wp_idx))
         # If no traffic light was detected, publish the base_waypoints as it is
         if (self.stopline_wp_idx== -1) or (self.stopline_wp_idx >= farthest_idx):
-            lane.waypoints = base_waypoints
+            #lane.waypoints = base_waypoints
             rospy.logwarn("No Change")
         else:
             rospy.logwarn("Reduce speed")
-            lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
+            lane.waypoints = self.decelerate_waypoints(lane.waypoints, closest_idx)
 
         return lane
         
