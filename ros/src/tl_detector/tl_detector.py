@@ -14,7 +14,7 @@ import time
 from scipy.spatial import KDTree
 
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 2
 DEBUG_CODE = False
 SAVE_IMAGES = False
 
@@ -88,9 +88,16 @@ class TLDetector(object):
                     self.last_wp = light_wp
                     self.upcoming_red_light_pub.publish(Int32(light_wp))
                 else:
-                    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                    if self.state_count > 0 and self.state_count < STATE_COUNT_THRESHOLD and state == TrafficLight.RED:
+                        self.upcoming_red_light_pub.publish(Int32(light_wp))
+                    else: 
+                        self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                    
                 self.state_count += 1
-
+                #RED:0, GREEN:2, UNKNOWN:4
+                #rospy.logwarn("red:{},green:{},unknown:{}".format(TrafficLight.RED, TrafficLight.GREEN,TrafficLight.UNKNOWN))
+                rospy.logwarn("---self state :{} state:{} state_count:{},light_wp:{},self.last_wp:{}".format(self.state, state, self.state_count,light_wp,self.last_wp))
+        
             rate.sleep()
 
     def pose_cb(self, msg):
@@ -172,6 +179,9 @@ class TLDetector(object):
 
         if closest_light:
             #self.process_count += 1
+            # where there are no lights, no detection
+            #if line_wp_idx -car_wp_idx > 100:
+                #return -1,TrafficLight.GREEN
             state = self.get_light_state(closest_light)
             #if (self.process_count % 5) == 0:
             #    rospy.logwarn("DETECT: line_wp_idx={}, state={}".format(line_wp_idx, self.to_string(state)))
